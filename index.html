@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Greenhouse Log — Plant Watering Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F1E7;
+    --paper-deep:#EFE7D6;
+    --ink:#2B2A25;
+    --forest:#1F3A2E;
+    --sage:#6B8F71;
+    --sage-deep:#4C6E52;
+    --clay:#A65A3C;
+    --alert:#B3402A;
+    --alert-bg:#F6E2DC;
+    --ok-bg:#E7EFE4;
+    --line:#D8D0BC;
+    --card:#FFFDF7;
+  }
+
+  [data-theme="dark"]{
+    --paper:#1B2620;
+    --paper-deep:#141C17;
+    --ink:#EDEAE0;
+    --forest:#9BC4A6;
+    --sage:#6B8F71;
+    --sage-deep:#8FB897;
+    --clay:#D68A64;
+    --alert:#E27C63;
+    --alert-bg:#3B2622;
+    --ok-bg:#233B2A;
+    --line:#3A453D;
+    --card:#22302A;
+  }
+
+  body{ transition:background .2s ease, color .2s ease; }
+
+  *{ box-sizing:border-box; }
+
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .wrap{
+    max-width:1080px;
+    margin:0 auto;
+    padding:0 28px 80px;
+  }
+
+  header.site{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:36px 0 28px;
+    border-bottom:1px solid var(--line);
+    gap:16px;
+    flex-wrap:wrap;
+  }
+
+  .brand{ display:flex; align-items:center; gap:14px; }
+
+  .brand svg{ width:38px; height:38px; flex-shrink:0; }
+
+  .brand-text h1{
+    font-family:'Fraunces', serif;
+    font-optical-sizing:auto;
+    font-weight:600;
+    font-size:26px;
+    margin:0;
+    color:var(--forest);
+    letter-spacing:0.2px;
+  }
+  .brand-text p{
+    margin:2px 0 0;
+    font-size:13px;
+    color:#6B6A5F;
+  }
+
+  .header-actions{ display:flex; gap:10px; flex-wrap:wrap; }
+
+  button.primary{
+    background:var(--forest);
+    color:var(--paper);
+    border:none;
+    padding:12px 22px;
+    font-family:'Inter', sans-serif;
+    font-size:14.5px;
+    font-weight:600;
+    cursor:pointer;
+    border-radius:3px;
+    transition:background .15s ease;
+  }
+  button.primary:hover{ background:var(--sage-deep); }
+  button.primary:focus-visible, button.ghost:focus-visible, button.small:focus-visible,
+  button.text-btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{
+    outline:2px solid var(--clay);
+    outline-offset:2px;
+  }
+
+  button.ghost{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--ink);
+    padding:11px 20px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    border-radius:3px;
+  }
+  button.ghost:hover{ border-color:var(--forest); }
+
+  /* ---------- Hero / stat strip ---------- */
+
+  .hero{
+    display:flex;
+    gap:40px;
+    align-items:flex-end;
+    padding:44px 0 40px;
+    border-bottom:1px solid var(--line);
+    flex-wrap:wrap;
+  }
+
+  .hero-stat{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:64px;
+    line-height:1;
+    color:var(--forest);
+  }
+  .hero-stat span{ font-size:26px; color:#6B6A5F; font-family:'Inter',sans-serif; font-weight:500; }
+
+  .hero-copy{ max-width:340px; padding-bottom:6px; }
+  .hero-copy p{
+    margin:0;
+    font-size:15px;
+    line-height:1.55;
+    color:#4A493F;
+  }
+
+  .hero-secondary{
+    display:flex;
+    gap:28px;
+    padding-bottom:8px;
+    margin-left:auto;
+  }
+  .hero-secondary div{ text-align:left; }
+  .hero-secondary .num{
+    font-family:'Fraunces', serif;
+    font-size:26px;
+    color:var(--forest);
+    font-weight:600;
+  }
+  .hero-secondary .label{
+    font-size:12px;
+    color:#8B8977;
+  }
+
+  /* ---------- Garden health bar ---------- */
+
+  .health-wrap{
+    margin:0 0 40px;
+  }
+  .health-label{
+    display:flex;
+    justify-content:space-between;
+    font-size:12.5px;
+    color:#8B8977;
+    margin-bottom:6px;
+  }
+  .health-label strong{ color:var(--forest); font-weight:600; }
+  .health-track{
+    height:8px;
+    background:var(--paper-deep);
+    border:1px solid var(--line);
+    overflow:hidden;
+  }
+  .health-fill{
+    height:100%;
+    background:linear-gradient(90deg, var(--sage), var(--sage-deep));
+    transition:width .4s ease, background .3s ease;
+  }
+  .health-fill.low{ background:linear-gradient(90deg, var(--alert), #8f3220); }
+  .health-fill.mid{ background:linear-gradient(90deg, var(--clay), var(--alert)); }
+
+  /* ---------- Icon picker ---------- */
+
+  .icon-picker{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+  .icon-choice{
+    width:64px; height:58px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:4px;
+    font-size:19px;
+    border:1px solid var(--line);
+    background:var(--paper);
+    cursor:pointer;
+    border-radius:3px;
+  }
+  .icon-choice span.emoji{ font-size:19px; line-height:1; }
+  .icon-choice span.label{ font-size:10px; color:#8B8977; font-family:'Inter',sans-serif; }
+  .icon-choice.selected{ border-color:var(--forest); background:var(--ok-bg); }
+  .icon-choice.selected span.label{ color:var(--sage-deep); }
+
+  .plant-card .card-top{ display:flex; align-items:center; gap:10px; margin-bottom:4px; }
+  .plant-card .icon{ font-size:22px; line-height:1; }
+  .plant-card .type-label{
+    font-size:10.5px;
+    color:#A79E88;
+    text-transform:none;
+    margin-left:auto;
+  }
+
+  /* ---------- Theme toggle ---------- */
+
+  .theme-toggle{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--ink);
+    width:40px; height:40px;
+    border-radius:3px;
+    cursor:pointer;
+    font-size:17px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .theme-toggle:hover{ border-color:var(--forest); }
+
+  /* ---------- Confetti ---------- */
+
+  .confetti-piece{
+    position:fixed;
+    top:-20px;
+    width:8px;
+    height:14px;
+    opacity:0.9;
+    z-index:200;
+    pointer-events:none;
+    animation:confetti-fall linear forwards;
+  }
+  @keyframes confetti-fall{
+    to{ transform:translateY(110vh) rotate(360deg); opacity:0; }
+  }
+
+  @media print{
+    header.site, .hero-secondary, .toolbar, .section-links, .modal-overlay,
+    .toast, footer.site, .health-wrap, button.small, .row-links, .icon, .alert-banner { display:none !important; }
+    body{ background:#fff; color:#000; }
+    .plant-card{ break-inside:avoid; border:1px solid #999; }
+    .hero{ border-bottom:1px solid #999; }
+  }
+
+  /* ---------- Greeting ---------- */
+
+  .greeting{
+    font-size:13px;
+    color:var(--sage-deep);
+    font-weight:600;
+    margin:0 0 4px;
+  }
+
+  /* ---------- Alert banner ---------- */
+
+  .alert-banner{
+    display:none;
+    align-items:center;
+    gap:14px;
+    background:var(--alert-bg);
+    border:1px solid var(--alert);
+    color:var(--alert);
+    padding:14px 18px;
+    font-size:14px;
+    font-weight:600;
+    margin:0 0 24px;
+  }
+  .alert-banner.show{ display:flex; }
+  .alert-banner .bell{ font-size:18px; }
+  .alert-banner .msg{ flex:1; }
+  .alert-banner button{
+    background:none;
+    border:1px solid var(--alert);
+    color:var(--alert);
+    padding:6px 12px;
+    font-size:12.5px;
+    font-weight:600;
+    cursor:pointer;
+    border-radius:3px;
+    font-family:'Inter',sans-serif;
+  }
+  .alert-banner .dismiss{ border:none; padding:4px; font-size:16px; }
+
+  /* ---------- Chips on card: light / difficulty / room ---------- */
+
+  .tag-row{ display:flex; gap:8px; flex-wrap:wrap; margin:0 0 12px; }
+  .tag-chip{
+    font-size:11.5px;
+    color:#6B6A5F;
+    background:var(--paper-deep);
+    border:1px solid var(--line);
+    padding:3px 9px;
+    border-radius:20px;
+  }
+  .diff-dot{
+    display:inline-block;
+    width:8px; height:8px;
+    border-radius:50%;
+    margin-right:5px;
+    vertical-align:middle;
+  }
+  .diff-easy{ background:#6B8F71; }
+  .diff-moderate{ background:#C88A3C; }
+  .diff-hard{ background:var(--alert); }
+
+  /* ---------- Snooze + history ---------- */
+
+  .row2{ display:flex; justify-content:space-between; align-items:center; margin-top:10px; flex-wrap:wrap; gap:8px; }
+
+  .history-list{
+    margin:10px 0 0;
+    padding:10px 12px;
+    background:var(--paper-deep);
+    font-size:12px;
+    color:#6B6A5F;
+    display:none;
+  }
+  .history-list.open{ display:block; }
+  .history-list div{ padding:2px 0; }
+
+  .segmented{ display:flex; gap:8px; flex-wrap:wrap; }
+  .seg-btn{
+    border:1px solid var(--line);
+    background:var(--paper);
+    padding:8px 14px;
+    font-size:13px;
+    cursor:pointer;
+    border-radius:3px;
+    font-family:'Inter',sans-serif;
+  }
+  .seg-btn.selected{ border-color:var(--forest); background:var(--ok-bg); font-weight:600; }
+
+  /* ---------- Add / edit panel (modal) ---------- */
+
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(31,58,46,0.35);
+    display:none;
+    align-items:flex-start;
+    justify-content:center;
+    padding:60px 20px;
+    z-index:50;
+  }
+  .modal-overlay.open{ display:flex; }
+
+  .add-panel{
+    width:100%;
+    max-width:520px;
+    border:1px solid var(--line);
+    background:var(--card);
+    padding:28px 30px;
+  }
+
+  .add-panel h2{
+    font-family:'Fraunces', serif;
+    font-size:19px;
+    font-weight:600;
+    margin:0 0 18px;
+    color:var(--forest);
+  }
+
+  .field-row{ display:flex; gap:18px; flex-wrap:wrap; }
+
+  .field{ display:flex; flex-direction:column; gap:6px; flex:1; min-width:180px; margin-bottom:16px; }
+  .field label{ font-size:12.5px; color:#6B6A5F; font-weight:600; }
+  .field input, .field textarea{
+    border:1px solid var(--line);
+    background:var(--paper);
+    padding:10px 12px;
+    font-family:'Inter', sans-serif;
+    font-size:14.5px;
+    color:var(--ink);
+    resize:vertical;
+  }
+
+  .add-panel .actions{ margin-top:6px; display:flex; gap:12px; }
+
+  /* ---------- Confirm dialog ---------- */
+
+  .confirm-box{
+    width:100%;
+    max-width:380px;
+    border:1px solid var(--line);
+    background:var(--card);
+    padding:26px 28px;
+  }
+  .confirm-box p{ font-size:14.5px; line-height:1.5; margin:0 0 20px; color:var(--ink); }
+  .confirm-box .actions{ display:flex; gap:12px; justify-content:flex-end; }
+  button.danger{
+    background:var(--alert);
+    color:#fff;
+    border:none;
+    padding:11px 18px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    border-radius:3px;
+  }
+  button.danger:hover{ background:#8f3220; }
+
+  /* ---------- Toolbar (search / sort / bulk) ---------- */
+
+  .toolbar{
+    display:flex;
+    gap:14px;
+    align-items:center;
+    flex-wrap:wrap;
+    margin:44px 0 20px;
+  }
+
+  .toolbar input[type="search"]{
+    flex:1;
+    min-width:180px;
+    border:1px solid var(--line);
+    background:var(--card);
+    padding:10px 14px;
+    font-family:'Inter', sans-serif;
+    font-size:14px;
+  }
+
+  .toolbar select{
+    border:1px solid var(--line);
+    background:var(--card);
+    padding:10px 12px;
+    font-family:'Inter', sans-serif;
+    font-size:14px;
+    color:var(--ink);
+  }
+
+  button.text-btn{
+    background:none;
+    border:none;
+    color:#6B6A5F;
+    text-decoration:underline;
+    text-underline-offset:3px;
+    font-size:13.5px;
+    cursor:pointer;
+    font-family:'Inter', sans-serif;
+    white-space:nowrap;
+  }
+  button.text-btn:hover{ color:var(--forest); }
+
+  /* ---------- Filter chips ---------- */
+
+  .filter-chips{ display:flex; gap:8px; }
+  .chip{
+    border:1px solid var(--line);
+    background:var(--card);
+    color:#6B6A5F;
+    padding:9px 16px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    border-radius:20px;
+    font-family:'Inter',sans-serif;
+  }
+  .chip.active{
+    background:var(--forest);
+    border-color:var(--forest);
+    color:var(--paper);
+  }
+
+  .section-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin:0 0 20px;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .section-head h2{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:21px;
+    color:var(--forest);
+    margin:0;
+  }
+  .section-links{ display:flex; gap:18px; flex-wrap:wrap; }
+
+  input[type="file"]{ display:none; }
+
+  /* ---------- Plant grid ---------- */
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
+    gap:16px;
+  }
+
+  .plant-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-left:4px solid var(--sage);
+    padding:20px 20px 18px;
+    position:relative;
+  }
+  .plant-card.due{ border-left-color:var(--alert); }
+
+  .plant-card .name{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:18px;
+    color:var(--forest);
+    margin:0 0 4px;
+  }
+  .plant-card .meta{
+    font-size:13px;
+    color:#6B6A5F;
+    margin:0 0 10px;
+  }
+  .plant-card .next-date{
+    font-size:12.5px;
+    color:#8B8977;
+    margin:0 0 10px;
+  }
+  .plant-card .next-date.overdue{ color:var(--alert); font-weight:600; }
+
+  .fav-btn{
+    background:none;
+    border:none;
+    cursor:pointer;
+    font-size:18px;
+    color:#C9C2AC;
+    line-height:1;
+    padding:0;
+    margin-left:auto;
+  }
+  .fav-btn.active{ color:var(--clay); }
+  .plant-card .notes{
+    font-size:13px;
+    color:#5B5A4F;
+    margin:0 0 12px;
+    line-height:1.45;
+    font-style:italic;
+  }
+
+  .badge{
+    display:inline-block;
+    font-size:12px;
+    font-weight:600;
+    padding:4px 10px;
+    border-radius:2px;
+    background:var(--ok-bg);
+    color:var(--sage-deep);
+    margin-bottom:16px;
+  }
+  .badge.due{
+    background:var(--alert-bg);
+    color:var(--alert);
+  }
+
+  .plant-card .row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .plant-card .row-links{ display:flex; gap:14px; }
+
+  button.small{
+    background:var(--forest);
+    color:var(--paper);
+    border:none;
+    padding:8px 14px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    border-radius:3px;
+  }
+  button.small:hover{ background:var(--sage-deep); }
+
+  button.link-btn{
+    background:none;
+    border:none;
+    color:#A79E88;
+    font-size:12.5px;
+    cursor:pointer;
+    text-decoration:underline;
+    text-underline-offset:2px;
+    padding:0;
+  }
+  button.link-btn:hover{ color:var(--forest); }
+  button.link-btn.danger-link:hover{ color:var(--alert); }
+
+  .empty{
+    border:1px dashed var(--line);
+    padding:50px 24px;
+    text-align:center;
+    color:#8B8977;
+    font-size:14.5px;
+    grid-column:1/-1;
+  }
+
+  footer.site{
+    margin-top:64px;
+    padding-top:20px;
+    border-top:1px solid var(--line);
+    font-size:12.5px;
+    color:#9A9788;
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+
+  .toast{
+    position:fixed;
+    bottom:26px;
+    left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--forest);
+    color:var(--paper);
+    padding:12px 22px;
+    font-size:13.5px;
+    border-radius:3px;
+    opacity:0;
+    transition:opacity .2s ease, transform .2s ease;
+    pointer-events:none;
+    z-index:100;
+    display:flex;
+    align-items:center;
+    gap:16px;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto; }
+  .toast .undo-link{
+    background:none;
+    border:none;
+    color:var(--sage);
+    font-weight:700;
+    text-decoration:underline;
+    cursor:pointer;
+    font-size:13.5px;
+    padding:0;
+    font-family:'Inter',sans-serif;
+  }
+
+  @media (max-width:560px){
+    .hero{ flex-direction:column; align-items:flex-start; gap:14px; }
+    .hero-secondary{ margin-left:0; }
+    header.site{ flex-direction:column; align-items:flex-start; gap:16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="site">
+    <div class="brand">
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M24 44V22" stroke="#1F3A2E" stroke-width="2"/>
+        <path d="M24 22C24 22 10 22 10 10C22 10 24 22 24 22Z" fill="#6B8F71"/>
+        <path d="M24 26C24 26 38 26 38 14C26 14 24 26 24 26Z" fill="#4C6E52"/>
+      </svg>
+      <div class="brand-text">
+        <p class="greeting" id="greeting"></p>
+        <h1>Greenhouse Log</h1>
+        <p>Know exactly which plant needs you today</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="theme-toggle" id="reminderToggle" title="Enable reminders" aria-label="Enable reminders">🔕</button>
+      <button class="theme-toggle" id="soundToggle" title="Toggle alert sound" aria-label="Toggle alert sound">🔇</button>
+      <button class="theme-toggle" id="themeToggle" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
+      <button class="ghost" id="printBtn">Print schedule</button>
+      <button class="ghost" id="exportBtn">Export JSON</button>
+      <button class="ghost" id="exportCsvBtn">Export CSV</button>
+      <button class="ghost" id="importBtn">Import data</button>
+      <input type="file" id="importFile" accept="application/json">
+      <button class="primary" id="toggleAddBtn">Add a plant</button>
+    </div>
+  </header>
+
+  <div class="alert-banner" id="alertBanner">
+    <span class="bell">🔔</span>
+    <span class="msg" id="alertMsg"></span>
+    <button id="alertWaterAllBtn">Water them now</button>
+    <button class="dismiss" id="alertDismissBtn" aria-label="Dismiss">✕</button>
+  </div>
+
+  <section class="hero">
+    <div class="hero-stat" id="heroStat">0<span>&nbsp;of&nbsp;0 need water</span></div>
+    <div class="hero-copy">
+      <p id="heroCopy">Add your first plant below to start tracking its watering schedule.</p>
+    </div>
+    <div class="hero-secondary">
+      <div>
+        <div class="num" id="statTotal">0</div>
+        <div class="label">Total plants</div>
+      </div>
+      <div>
+        <div class="num" id="statAvg">0</div>
+        <div class="label">Avg. days between waterings</div>
+      </div>
+      <div>
+        <div class="num" id="statWaterings">0</div>
+        <div class="label">Waterings logged</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="health-wrap">
+    <div class="health-label">
+      <span>Garden health</span>
+      <strong id="healthPercent">0%</strong>
+    </div>
+    <div class="health-track"><div class="health-fill" id="healthFill" style="width:0%"></div></div>
+  </div>
+
+  <div class="toolbar">
+    <input type="search" id="searchInput" placeholder="Search your plants…">
+    <div class="filter-chips">
+      <button class="chip active" data-filter="all">All</button>
+      <button class="chip" data-filter="due">Needs water</button>
+      <button class="chip" data-filter="ok">On schedule</button>
+    </div>
+    <select id="sortSelect">
+      <option value="urgent">Sort: Needs water first</option>
+      <option value="favorite">Sort: Favorites first</option>
+      <option value="name">Sort: Name A–Z</option>
+      <option value="interval">Sort: Watering interval</option>
+      <option value="recent">Sort: Recently watered</option>
+    </select>
+    <select id="lightFilter">
+      <option value="all">All light needs</option>
+      <option value="Full sun">☀️ Full sun</option>
+      <option value="Partial sun">⛅ Partial sun</option>
+      <option value="Shade">🌑 Shade</option>
+    </select>
+    <button class="text-btn" id="waterAllBtn">Water all →</button>
+  </div>
+
+  <div class="section-head">
+    <h2>Your plants</h2>
+    <div class="section-links">
+      <button class="text-btn" id="advanceDayBtn">Skip a day (for testing) →</button>
+    </div>
+  </div>
+
+  <div class="grid" id="plantGrid"></div>
+
+  <footer class="site">
+    <span>Saved automatically in this browser — reopen the page anytime to see your plants.</span>
+    <span id="lastSaved"></span>
+  </footer>
+
+</div>
+
+<!-- Add / Edit modal -->
+<div class="modal-overlay" id="addOverlay">
+  <div class="add-panel">
+    <h2 id="panelTitle">Add a new plant</h2>
+    <div class="field">
+      <label>Choose an icon</label>
+      <div class="icon-picker" id="iconPicker"></div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="plantName">Plant name</label>
+        <input type="text" id="plantName" placeholder="e.g. Fiddle Leaf Fig">
+      </div>
+      <div class="field">
+        <label for="plantInterval">Water every (days)</label>
+        <input type="number" id="plantInterval" min="1" placeholder="e.g. 7">
+      </div>
+    </div>
+    <div class="field">
+      <label for="plantNotes">Notes (optional)</label>
+      <textarea id="plantNotes" rows="2" placeholder="e.g. keep in indirect light"></textarea>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="plantRoom">Room / location (optional)</label>
+        <input type="text" id="plantRoom" placeholder="e.g. Kitchen windowsill">
+      </div>
+    </div>
+    <div class="field">
+      <label>Light needs</label>
+      <div class="segmented" id="lightPicker">
+        <button type="button" class="seg-btn" data-light="Full sun">☀️ Full sun</button>
+        <button type="button" class="seg-btn" data-light="Partial sun">⛅ Partial sun</button>
+        <button type="button" class="seg-btn" data-light="Shade">🌑 Shade</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Care difficulty</label>
+      <div class="segmented" id="difficultyPicker">
+        <button type="button" class="seg-btn" data-difficulty="Easy">🟢 Easy</button>
+        <button type="button" class="seg-btn" data-difficulty="Moderate">🟠 Moderate</button>
+        <button type="button" class="seg-btn" data-difficulty="Hard">🔴 Hard</button>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="primary" id="saveBtn">Save plant</button>
+      <button class="ghost" id="cancelBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm remove modal -->
+<div class="modal-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <p id="confirmText">Remove this plant from your tracker?</p>
+    <div class="actions">
+      <button class="ghost" id="confirmCancelBtn">Cancel</button>
+      <button class="danger" id="confirmRemoveBtn">Remove</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const STORAGE_KEY = "greenhouse-log-plants-v2";
+  const STATS_KEY = "greenhouse-log-stats";
+  const THEME_KEY = "greenhouse-log-theme";
+  const ICONS = [
+    { emoji: "🪴", label: "Potted" },
+    { emoji: "🌵", label: "Cactus" },
+    { emoji: "🌿", label: "Herb" },
+    { emoji: "🌸", label: "Flower" },
+    { emoji: "🍀", label: "Succulent" },
+    { emoji: "🌻", label: "Sunflower" },
+    { emoji: "🌹", label: "Rose" },
+    { emoji: "🌴", label: "Tree" }
+  ];
+  function iconLabel(emoji){
+    const found = ICONS.find(i => i.emoji === emoji);
+    return found ? found.label : "";
+  }
+
+  let plants = loadPlants();
+  let stats = loadStats();
+  let editingId = null;
+  let pendingRemoveId = null;
+  let selectedIcon = ICONS[0].emoji;
+  let selectedLight = "";
+  let selectedDifficulty = "";
+  let activeFilter = "all";
+  let deletedStash = {}; // id -> {plant, timeoutId} for undo
+  let remindersEnabled = localStorage.getItem("greenhouse-log-reminders") === "on";
+  let soundEnabled = localStorage.getItem("greenhouse-log-sound") === "on";
+  let lastNotifiedKey = "";
+  let bannerDismissedKey = "";
+  let wasFullHealth = false;
+
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+  function loadStats(){
+    try{ return JSON.parse(localStorage.getItem(STATS_KEY)) || { totalWaterings: 0 }; }
+    catch(e){ return { totalWaterings: 0 }; }
+  }
+  function saveStats(){ localStorage.setItem(STATS_KEY, JSON.stringify(stats)); }
+
+  function loadPlants(){
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      try{ return JSON.parse(raw); } catch(e){ return []; }
+    }
+    // migrate from the older name-keyed format, if present
+    const oldRaw = localStorage.getItem("greenhouse-log-plants");
+    if(oldRaw){
+      try{
+        const old = JSON.parse(oldRaw);
+        return Object.keys(old).map(name => ({
+          id: uid(),
+          name,
+          wateringInterval: old[name].wateringInterval,
+          daysSinceWatered: old[name].daysSinceWatered,
+          notes: "",
+          icon: "🪴",
+          favorite: false,
+          light: "",
+          difficulty: "",
+          room: "",
+          history: []
+        }));
+      } catch(e){ return []; }
+    }
+    return [];
+  }
+
+  function savePlants(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(plants));
+    const stamp = document.getElementById('lastSaved');
+    stamp.textContent = "Last saved " + new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  }
+
+  const grid = document.getElementById('plantGrid');
+  const heroStat = document.getElementById('heroStat');
+  const heroCopy = document.getElementById('heroCopy');
+  const addOverlay = document.getElementById('addOverlay');
+  const confirmOverlay = document.getElementById('confirmOverlay');
+  const searchInput = document.getElementById('searchInput');
+  const sortSelect = document.getElementById('sortSelect');
+
+  function isDue(p){ return p.daysSinceWatered >= p.wateringInterval; }
+
+  function getVisiblePlants(){
+    const query = searchInput.value.trim().toLowerCase();
+    let list = plants.filter(p =>
+      p.name.toLowerCase().includes(query) || (p.room || "").toLowerCase().includes(query)
+    );
+
+    if(activeFilter === 'due') list = list.filter(isDue);
+    else if(activeFilter === 'ok') list = list.filter(p => !isDue(p));
+
+    const lightVal = document.getElementById('lightFilter').value;
+    if(lightVal !== 'all') list = list.filter(p => p.light === lightVal);
+
+    const sortBy = sortSelect.value;
+    if(sortBy === 'name'){
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    } else if(sortBy === 'interval'){
+      list.sort((a, b) => a.wateringInterval - b.wateringInterval);
+    } else if(sortBy === 'recent'){
+      list.sort((a, b) => a.daysSinceWatered - b.daysSinceWatered);
+    } else if(sortBy === 'favorite'){
+      list.sort((a, b) => (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0));
+    } else {
+      // urgent first: due plants sorted by how overdue, then upcoming by days left
+      list.sort((a, b) => {
+        const aOver = a.daysSinceWatered - a.wateringInterval;
+        const bOver = b.daysSinceWatered - b.wateringInterval;
+        return bOver - aOver;
+      });
+    }
+    return list;
+  }
+
+  function formatNextDate(daysLeft){
+    const d = new Date();
+    d.setDate(d.getDate() + Math.max(daysLeft, 0));
+    return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+
+  function showPlants(){
+    const visible = getVisiblePlants();
+    grid.innerHTML = "";
+
+    if(plants.length === 0){
+      grid.innerHTML = '<div class="empty">You don\'t have any plants yet. Add one to get started.</div>';
+    } else if(visible.length === 0){
+      grid.innerHTML = '<div class="empty">No plants match your search.</div>';
+    } else {
+      visible.forEach(p => {
+        const due = isDue(p);
+        const daysLeft = p.wateringInterval - p.daysSinceWatered;
+        const statusText = due ? 'Needs water' : `OK · ${daysLeft} day${daysLeft === 1 ? '' : 's'} left`;
+
+        const card = document.createElement('div');
+        card.className = 'plant-card' + (due ? ' due' : '');
+        const dateLabel = due ? 'Overdue for water' : `Next: ${formatNextDate(daysLeft)}`;
+        const lightIcon = { "Full sun": "☀️", "Partial sun": "⛅", "Shade": "🌑" }[p.light] || "";
+        const diffClass = { "Easy": "diff-easy", "Moderate": "diff-moderate", "Hard": "diff-hard" }[p.difficulty] || "";
+        const tags = [];
+        if(p.room) tags.push(`<span class="tag-chip">📍 ${escapeHtml(p.room)}</span>`);
+        if(p.light) tags.push(`<span class="tag-chip">${lightIcon} ${escapeHtml(p.light)}</span>`);
+        if(p.difficulty) tags.push(`<span class="tag-chip"><span class="diff-dot ${diffClass}"></span>${escapeHtml(p.difficulty)}</span>`);
+        const history = (p.history || []).slice(-5).reverse();
+
+        card.innerHTML = `
+          <div class="card-top">
+            <span class="icon">${p.icon || '🪴'}</span>
+            <p class="name">${escapeHtml(p.name)}</p>
+            <span class="type-label">${iconLabel(p.icon)}</span>
+            <button class="fav-btn${p.favorite ? ' active' : ''}" data-fav="${p.id}" title="Favorite" aria-label="Favorite">${p.favorite ? '★' : '☆'}</button>
+          </div>
+          <p class="meta">Watered ${p.daysSinceWatered} day${p.daysSinceWatered === 1 ? '' : 's'} ago · every ${p.wateringInterval} days</p>
+          <p class="next-date${due ? ' overdue' : ''}">${dateLabel}</p>
+          ${tags.length ? `<div class="tag-row">${tags.join('')}</div>` : ''}
+          ${p.notes ? `<p class="notes">${escapeHtml(p.notes)}</p>` : ''}
+          <span class="badge ${due ? 'due' : ''}">${statusText}</span>
+          <div class="row">
+            <button class="small" data-water="${p.id}">Water now</button>
+            <div class="row-links">
+              <button class="link-btn" data-duplicate="${p.id}">Duplicate</button>
+              <button class="link-btn" data-edit="${p.id}">Edit</button>
+              <button class="link-btn danger-link" data-remove="${p.id}">Remove</button>
+            </div>
+          </div>
+          <div class="row2">
+            ${due ? `<button class="link-btn" data-snooze="${p.id}">Snooze 1 day</button>` : '<span></span>'}
+            <button class="link-btn" data-history="${p.id}">History (${(p.history || []).length})</button>
+          </div>
+          <div class="history-list" id="history-${p.id}">
+            ${history.length ? history.map(ts => `<div>💧 ${new Date(ts).toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'})}</div>`).join('') : '<div>No waterings logged yet.</div>'}
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    updateHero();
+  }
+
+  function updateHero(){
+    const total = plants.length;
+    const dueCount = plants.filter(isDue).length;
+
+    heroStat.innerHTML = `${dueCount}<span>&nbsp;of&nbsp;${total} need water</span>`;
+
+    if(total === 0){
+      heroCopy.textContent = "Add your first plant below to start tracking its watering schedule.";
+    } else if(dueCount === 0){
+      heroCopy.textContent = "Everything is on schedule. Check back tomorrow.";
+    } else {
+      heroCopy.textContent = `${dueCount} plant${dueCount === 1 ? '' : 's'} could use some water today.`;
+    }
+
+    document.getElementById('statTotal').textContent = total;
+    const avg = total ? Math.round(plants.reduce((sum, p) => sum + p.wateringInterval, 0) / total) : 0;
+    document.getElementById('statAvg').textContent = avg;
+    document.getElementById('statWaterings').textContent = stats.totalWaterings;
+
+    const healthPct = total ? Math.round(((total - dueCount) / total) * 100) : 0;
+    const fill = document.getElementById('healthFill');
+    fill.style.width = healthPct + "%";
+    fill.classList.remove('low', 'mid');
+    if(healthPct < 40) fill.classList.add('low');
+    else if(healthPct < 80) fill.classList.add('mid');
+    document.getElementById('healthPercent').textContent = healthPct + "%";
+
+    if(total > 0 && healthPct === 100 && !wasFullHealth){
+      launchConfetti();
+      showToast("Garden health 100% — nice work!");
+    }
+    wasFullHealth = (total > 0 && healthPct === 100);
+
+    checkAlertsAndReminders();
+  }
+
+  function launchConfetti(){
+    const colors = ['#6B8F71', '#A65A3C', '#4C6E52', '#D8D0BC', '#B3402A'];
+    for(let i = 0; i < 40; i++){
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.left = Math.random() * 100 + 'vw';
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.animationDuration = (2 + Math.random() * 1.5) + 's';
+      piece.style.transform = `rotate(${Math.random() * 360}deg)`;
+      document.body.appendChild(piece);
+      setTimeout(() => piece.remove(), 3600);
+    }
+  }
+
+  function showToast(message){
+    const toast = document.getElementById('toast');
+    toast.innerHTML = escapeHtml(message);
+    toast.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toast.classList.remove('show'), 2200);
+  }
+
+  function showUndoToast(message, id){
+    const toast = document.getElementById('toast');
+    toast.innerHTML = `<span>${escapeHtml(message)}</span><button class="undo-link" id="undoBtn">Undo</button>`;
+    toast.classList.add('show');
+    document.getElementById('undoBtn').addEventListener('click', () => {
+      undoRemove(id);
+      toast.classList.remove('show');
+    });
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toast.classList.remove('show'), 5000);
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ---- CRUD ----
+
+  function addOrUpdatePlant(name, interval, notes, icon, room, light, difficulty){
+    if(editingId){
+      const p = plants.find(pl => pl.id === editingId);
+      if(p){
+        p.name = name;
+        p.wateringInterval = interval;
+        p.notes = notes;
+        p.icon = icon;
+        p.room = room;
+        p.light = light;
+        p.difficulty = difficulty;
+      }
+      showToast("Plant updated");
+    } else {
+      plants.push({
+        id: uid(), name, wateringInterval: interval, daysSinceWatered: 0,
+        notes, icon, favorite: false, room, light, difficulty, history: []
+      });
+      showToast("Plant added");
+    }
+    savePlants();
+    showPlants();
+  }
+
+  function waterPlant(id){
+    const p = plants.find(pl => pl.id === id);
+    if(!p) return;
+    p.daysSinceWatered = 0;
+    p.history = p.history || [];
+    p.history.push(new Date().toISOString());
+    stats.totalWaterings += 1;
+    saveStats();
+    savePlants();
+    showPlants();
+    showToast(`${p.name} marked as watered`);
+  }
+
+  function waterAll(){
+    if(plants.length === 0) return;
+    const now = new Date().toISOString();
+    plants.forEach(p => {
+      p.daysSinceWatered = 0;
+      p.history = p.history || [];
+      p.history.push(now);
+    });
+    stats.totalWaterings += plants.length;
+    saveStats();
+    savePlants();
+    showPlants();
+    showToast("All plants watered");
+  }
+
+  function snoozePlant(id){
+    const p = plants.find(pl => pl.id === id);
+    if(!p) return;
+    p.daysSinceWatered = Math.max(0, p.daysSinceWatered - 1);
+    savePlants();
+    showPlants();
+    showToast(`${p.name} snoozed for a day`);
+  }
+
+  function toggleFavorite(id){
+    const p = plants.find(pl => pl.id === id);
+    if(!p) return;
+    p.favorite = !p.favorite;
+    savePlants();
+    showPlants();
+  }
+
+  function duplicatePlant(id){
+    const p = plants.find(pl => pl.id === id);
+    if(!p) return;
+    plants.push({
+      id: uid(),
+      name: p.name + " (copy)",
+      wateringInterval: p.wateringInterval,
+      daysSinceWatered: 0,
+      notes: p.notes,
+      icon: p.icon,
+      favorite: false,
+      room: p.room,
+      light: p.light,
+      difficulty: p.difficulty,
+      history: []
+    });
+    savePlants();
+    showPlants();
+    showToast(`${p.name} duplicated`);
+  }
+
+  function removePlant(id){
+    const index = plants.findIndex(pl => pl.id === id);
+    if(index === -1) return;
+    const [removed] = plants.splice(index, 1);
+    savePlants();
+    showPlants();
+
+    const timeoutId = setTimeout(() => { delete deletedStash[id]; }, 5000);
+    deletedStash[id] = { plant: removed, index, timeoutId };
+    showUndoToast(`${removed.name} removed`, id);
+  }
+
+  function undoRemove(id){
+    const stashed = deletedStash[id];
+    if(!stashed) return;
+    clearTimeout(stashed.timeoutId);
+    const insertAt = Math.min(stashed.index, plants.length);
+    plants.splice(insertAt, 0, stashed.plant);
+    delete deletedStash[id];
+    savePlants();
+    showPlants();
+    showToast(`${stashed.plant.name} restored`);
+  }
+
+  function advanceDay(){
+    if(plants.length === 0) return;
+    plants.forEach(p => p.daysSinceWatered += 1);
+    savePlants();
+    showPlants();
+    showToast("A day has passed for all plants");
+  }
+
+  // ---- Add / edit modal ----
+
+  function renderIconPicker(){
+    const picker = document.getElementById('iconPicker');
+    picker.innerHTML = ICONS.map(i =>
+      `<button type="button" class="icon-choice${i.emoji === selectedIcon ? ' selected' : ''}" data-icon="${i.emoji}">
+         <span class="emoji">${i.emoji}</span><span class="label">${i.label}</span>
+       </button>`
+    ).join('');
+  }
+
+  document.getElementById('iconPicker').addEventListener('click', (e) => {
+    const btn = e.target.closest('.icon-choice');
+    if(!btn) return;
+    selectedIcon = btn.getAttribute('data-icon');
+    renderIconPicker();
+  });
+
+  function renderSegmented(pickerId, dataAttr, selectedVal){
+    document.querySelectorAll(`#${pickerId} .seg-btn`).forEach(btn => {
+      btn.classList.toggle('selected', btn.getAttribute(dataAttr) === selectedVal);
+    });
+  }
+
+  document.getElementById('lightPicker').addEventListener('click', (e) => {
+    const btn = e.target.closest('.seg-btn');
+    if(!btn) return;
+    const val = btn.getAttribute('data-light');
+    selectedLight = (selectedLight === val) ? "" : val;
+    renderSegmented('lightPicker', 'data-light', selectedLight);
+  });
+
+  document.getElementById('difficultyPicker').addEventListener('click', (e) => {
+    const btn = e.target.closest('.seg-btn');
+    if(!btn) return;
+    const val = btn.getAttribute('data-difficulty');
+    selectedDifficulty = (selectedDifficulty === val) ? "" : val;
+    renderSegmented('difficultyPicker', 'data-difficulty', selectedDifficulty);
+  });
+
+  function openAddModal(){
+    editingId = null;
+    selectedIcon = ICONS[0].emoji;
+    selectedLight = "";
+    selectedDifficulty = "";
+    document.getElementById('panelTitle').textContent = "Add a new plant";
+    document.getElementById('plantName').value = "";
+    document.getElementById('plantInterval').value = "";
+    document.getElementById('plantNotes').value = "";
+    document.getElementById('plantRoom').value = "";
+    renderIconPicker();
+    renderSegmented('lightPicker', 'data-light', selectedLight);
+    renderSegmented('difficultyPicker', 'data-difficulty', selectedDifficulty);
+    addOverlay.classList.add('open');
+    document.getElementById('plantName').focus();
+  }
+
+  function openEditModal(id){
+    const p = plants.find(pl => pl.id === id);
+    if(!p) return;
+    editingId = id;
+    selectedIcon = p.icon || ICONS[0].emoji;
+    selectedLight = p.light || "";
+    selectedDifficulty = p.difficulty || "";
+    document.getElementById('panelTitle').textContent = "Edit plant";
+    document.getElementById('plantName').value = p.name;
+    document.getElementById('plantInterval').value = p.wateringInterval;
+    document.getElementById('plantNotes').value = p.notes || "";
+    document.getElementById('plantRoom').value = p.room || "";
+    renderIconPicker();
+    renderSegmented('lightPicker', 'data-light', selectedLight);
+    renderSegmented('difficultyPicker', 'data-difficulty', selectedDifficulty);
+    addOverlay.classList.add('open');
+    document.getElementById('plantName').focus();
+  }
+
+  function closeAddModal(){
+    addOverlay.classList.remove('open');
+    editingId = null;
+  }
+
+  document.getElementById('toggleAddBtn').addEventListener('click', openAddModal);
+  document.getElementById('cancelBtn').addEventListener('click', closeAddModal);
+  addOverlay.addEventListener('click', (e) => { if(e.target === addOverlay) closeAddModal(); });
+
+  document.getElementById('saveBtn').addEventListener('click', () => {
+    const nameInput = document.getElementById('plantName');
+    const intervalInput = document.getElementById('plantInterval');
+    const notesInput = document.getElementById('plantNotes');
+    const roomInput = document.getElementById('plantRoom');
+
+    const name = nameInput.value.trim();
+    const interval = parseInt(intervalInput.value, 10);
+    const notes = notesInput.value.trim();
+    const room = roomInput.value.trim();
+
+    if(!name){ nameInput.focus(); return; }
+    if(!interval || interval < 1){ intervalInput.focus(); return; }
+
+    const duplicate = plants.find(p => p.name.toLowerCase() === name.toLowerCase() && p.id !== editingId);
+    if(duplicate){ nameInput.focus(); showToast("You already have a plant with that name"); return; }
+
+    addOrUpdatePlant(name, interval, notes, selectedIcon, room, selectedLight, selectedDifficulty);
+    closeAddModal();
+  });
+
+  // ---- Confirm remove ----
+
+  function openConfirm(id){
+    const p = plants.find(pl => pl.id === id);
+    if(!p) return;
+    pendingRemoveId = id;
+    document.getElementById('confirmText').textContent = `Remove ${p.name} from your tracker?`;
+    confirmOverlay.classList.add('open');
+  }
+  function closeConfirm(){
+    confirmOverlay.classList.remove('open');
+    pendingRemoveId = null;
+  }
+
+  document.getElementById('confirmCancelBtn').addEventListener('click', closeConfirm);
+  confirmOverlay.addEventListener('click', (e) => { if(e.target === confirmOverlay) closeConfirm(); });
+  document.getElementById('confirmRemoveBtn').addEventListener('click', () => {
+    if(pendingRemoveId) removePlant(pendingRemoveId);
+    closeConfirm();
+  });
+
+  // ---- Toolbar ----
+
+  document.getElementById('waterAllBtn').addEventListener('click', waterAll);
+  document.getElementById('advanceDayBtn').addEventListener('click', advanceDay);
+  searchInput.addEventListener('input', showPlants);
+  sortSelect.addEventListener('change', showPlants);
+  document.getElementById('lightFilter').addEventListener('change', showPlants);
+
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      activeFilter = chip.getAttribute('data-filter');
+      showPlants();
+    });
+  });
+
+  // ---- Export / Import ----
+
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(plants, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'greenhouse-log-plants.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast("Data exported");
+  });
+
+  const importFileInput = document.getElementById('importFile');
+  document.getElementById('importBtn').addEventListener('click', () => importFileInput.click());
+  importFileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try{
+        const data = JSON.parse(evt.target.result);
+        if(!Array.isArray(data)) throw new Error("bad format");
+        plants = data.map(p => ({
+          id: p.id || uid(),
+          name: String(p.name),
+          wateringInterval: Number(p.wateringInterval) || 1,
+          daysSinceWatered: Number(p.daysSinceWatered) || 0,
+          notes: p.notes || "",
+          icon: p.icon || "🪴",
+          favorite: !!p.favorite,
+          room: p.room || "",
+          light: p.light || "",
+          difficulty: p.difficulty || "",
+          history: Array.isArray(p.history) ? p.history : []
+        }));
+        savePlants();
+        showPlants();
+        showToast("Data imported");
+      } catch(err){
+        showToast("Couldn't read that file");
+      }
+    };
+    reader.readAsText(file);
+    importFileInput.value = "";
+  });
+
+  // ---- Card click delegation ----
+
+  grid.addEventListener('click', (e) => {
+    const waterId = e.target.getAttribute('data-water');
+    const editId = e.target.getAttribute('data-edit');
+    const removeId = e.target.getAttribute('data-remove');
+    const favId = e.target.getAttribute('data-fav');
+    const dupId = e.target.getAttribute('data-duplicate');
+    const snoozeId = e.target.getAttribute('data-snooze');
+    const historyId = e.target.getAttribute('data-history');
+    if(waterId) waterPlant(waterId);
+    if(editId) openEditModal(editId);
+    if(removeId) openConfirm(removeId);
+    if(favId) toggleFavorite(favId);
+    if(dupId) duplicatePlant(dupId);
+    if(snoozeId) snoozePlant(snoozeId);
+    if(historyId){
+      const el = document.getElementById('history-' + historyId);
+      if(el) el.classList.toggle('open');
+    }
+  });
+
+  // ---- Keyboard: close modals with Escape ----
+
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape'){
+      closeAddModal();
+      closeConfirm();
+    }
+  });
+
+  // ---- Theme ----
+
+  function applyTheme(theme){
+    if(theme === 'dark'){
+      document.documentElement.setAttribute('data-theme', 'dark');
+      document.getElementById('themeToggle').textContent = "☀️";
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      document.getElementById('themeToggle').textContent = "🌙";
+    }
+    localStorage.setItem(THEME_KEY, theme);
+  }
+
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    applyTheme(isDark ? 'light' : 'dark');
+  });
+
+  applyTheme(localStorage.getItem(THEME_KEY) || 'light');
+
+  // ---- Print ----
+
+  document.getElementById('printBtn').addEventListener('click', () => window.print());
+
+  // ---- Alerts & reminders ----
+
+  function playAlertSound(){
+    try{
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.5);
+    } catch(e){ /* audio not available */ }
+  }
+
+  function checkAlertsAndReminders(){
+    const duePlants = plants.filter(isDue);
+    const banner = document.getElementById('alertBanner');
+    const key = duePlants.map(p => p.id).sort().join(',');
+
+    if(duePlants.length === 0){
+      banner.classList.remove('show');
+      bannerDismissedKey = "";
+      lastNotifiedKey = "";
+      return;
+    }
+
+    const names = duePlants.map(p => p.name).join(', ');
+    document.getElementById('alertMsg').textContent =
+      duePlants.length === 1 ? `${names} needs water.` : `${duePlants.length} plants need water: ${names}`;
+
+    if(key !== bannerDismissedKey){
+      banner.classList.add('show');
+    }
+
+    if(key !== lastNotifiedKey){
+      if(soundEnabled) playAlertSound();
+      if(remindersEnabled && "Notification" in window && Notification.permission === "granted"){
+        new Notification("Greenhouse Log", { body: document.getElementById('alertMsg').textContent });
+      }
+      lastNotifiedKey = key;
+    }
+  }
+
+  document.getElementById('alertDismissBtn').addEventListener('click', () => {
+    const duePlants = plants.filter(isDue);
+    bannerDismissedKey = duePlants.map(p => p.id).sort().join(',');
+    document.getElementById('alertBanner').classList.remove('show');
+  });
+  document.getElementById('alertWaterAllBtn').addEventListener('click', waterAll);
+
+  function updateReminderBtn(){
+    document.getElementById('reminderToggle').textContent = remindersEnabled ? "🔔" : "🔕";
+  }
+  function updateSoundBtn(){
+    document.getElementById('soundToggle').textContent = soundEnabled ? "🔊" : "🔇";
+  }
+
+  document.getElementById('reminderToggle').addEventListener('click', () => {
+    if(!remindersEnabled){
+      if("Notification" in window){
+        Notification.requestPermission().then(permission => {
+          if(permission === "granted"){
+            remindersEnabled = true;
+            localStorage.setItem("greenhouse-log-reminders", "on");
+            updateReminderBtn();
+            showToast("Reminders enabled — you'll get a browser notification when a plant needs water");
+          } else {
+            showToast("Notifications were blocked in your browser");
+          }
+        });
+      } else {
+        showToast("Notifications aren't supported in this browser");
+      }
+    } else {
+      remindersEnabled = false;
+      localStorage.setItem("greenhouse-log-reminders", "off");
+      updateReminderBtn();
+      showToast("Reminders turned off");
+    }
+  });
+
+  document.getElementById('soundToggle').addEventListener('click', () => {
+    soundEnabled = !soundEnabled;
+    localStorage.setItem("greenhouse-log-sound", soundEnabled ? "on" : "off");
+    updateSoundBtn();
+    if(soundEnabled) playAlertSound();
+  });
+
+  updateReminderBtn();
+  updateSoundBtn();
+
+  // check periodically while the tab stays open
+  setInterval(checkAlertsAndReminders, 60000);
+
+  // ---- Greeting ----
+
+  function setGreeting(){
+    const hour = new Date().getHours();
+    let text = "Good evening 🌙";
+    if(hour < 12) text = "Good morning 🌱";
+    else if(hour < 18) text = "Good afternoon 🌿";
+    document.getElementById('greeting').textContent = text;
+  }
+  setGreeting();
+
+  // ---- Keyboard shortcuts ----
+
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape'){
+      closeAddModal();
+      closeConfirm();
+      return;
+    }
+    const tag = document.activeElement.tagName;
+    const typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+    if(typing) return;
+
+    if(e.key === 'n'){
+      e.preventDefault();
+      openAddModal();
+    } else if(e.key === '/'){
+      e.preventDefault();
+      searchInput.focus();
+    }
+  });
+
+  // ---- CSV export ----
+
+  document.getElementById('exportCsvBtn').addEventListener('click', () => {
+    const headers = ["name","wateringInterval","daysSinceWatered","notes","icon","favorite","room","light","difficulty"];
+    const rows = plants.map(p => headers.map(h => {
+      const val = p[h] === undefined || p[h] === null ? "" : String(p[h]);
+      return `"${val.replace(/"/g, '""')}"`;
+    }).join(","));
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'greenhouse-log-plants.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast("CSV exported");
+  });
+
+  showPlants();
+</script>
+
+</body>
+</html>
